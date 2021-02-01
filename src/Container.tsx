@@ -1,62 +1,33 @@
 import React, { Component, CSSProperties } from 'react';
-import PropTypes from 'prop-types';
-import { smoothDnD as container, ContainerOptions, SmoothDnD } from 'smooth-dnd';
-import { dropHandlers } from 'smooth-dnd';
+
+import {
+  smoothDnD as container,
+  ContainerOptions,
+  SmoothDnD,
+  dropHandlers,
+} from 'smooth-dnd';
 
 container.dropHandler = dropHandlers.reactDropHandler().handler;
 container.wrapChild = false;
 
 interface ContainerProps extends ContainerOptions {
-	render?: (rootRef: React.RefObject<any>) => React.ReactElement;
-	style?: CSSProperties;
+  render?: (rootRef: React.RefObject<any>) => React.ReactElement;
+  style?: CSSProperties;
 }
 
 class Container extends Component<ContainerProps> {
-	public static propTypes = {
-		behaviour: PropTypes.oneOf(['move', 'copy', 'drop-zone', 'contain']),
-		groupName: PropTypes.string,
-		orientation: PropTypes.oneOf(['horizontal', 'vertical']),
-		style: PropTypes.object,
-		dragHandleSelector: PropTypes.string,
-		nonDragAreaSelector: PropTypes.string,
-		dragBeginDelay: PropTypes.number,
-		animationDuration: PropTypes.number,
-		autoScrollEnabled: PropTypes.bool,
-		lockAxis: PropTypes.string,
-		dragClass: PropTypes.string,
-		dropClass: PropTypes.string,
-		onDragStart: PropTypes.func,
-		onDragEnd: PropTypes.func,
-		onDrop: PropTypes.func,
-		getChildPayload: PropTypes.func,
-		shouldAnimateDrop: PropTypes.func,
-		shouldAcceptDrop: PropTypes.func,
-		onDragEnter: PropTypes.func,
-		onDragLeave: PropTypes.func,
-		render: PropTypes.func,
-		getGhostParent: PropTypes.func,
-    removeOnDropOut: PropTypes.bool,
-    dropPlaceholder: PropTypes.oneOfType([
-      PropTypes.shape({
-        className: PropTypes.string,
-        animationDuration: PropTypes.number,
-        showOnTop: PropTypes.bool,
-      }),
-      PropTypes.bool,
-    ]),
-	};
+  public static defaultProps = {
+    behaviour: 'move',
+    orientation: 'vertical',
+  };
 
-	public static defaultProps = {
-		behaviour: 'move',
-		orientation: 'vertical',
-	};
+  prevContainer: null;
+  container: SmoothDnD = null!;
+  containerRef: React.RefObject<any> = React.createRef();
 
-	prevContainer: null;
-	container: SmoothDnD = null!;
-	containerRef: React.RefObject<any> = React.createRef();
   constructor(props: ContainerProps) {
     super(props);
-		this.getContainerOptions = this.getContainerOptions.bind(this);
+    this.getContainerOptions = this.getContainerOptions.bind(this);
     this.getContainer = this.getContainer.bind(this);
     this.isObjectTypePropsChanged = this.isObjectTypePropsChanged.bind(this);
     this.prevContainer = null;
@@ -76,13 +47,16 @@ class Container extends Component<ContainerProps> {
     if (this.getContainer()) {
       if (this.prevContainer && this.prevContainer !== this.getContainer()) {
         this.container.dispose();
-        this.container = container(this.getContainer(), this.getContainerOptions());
+        this.container = container(
+          this.getContainer(),
+          this.getContainerOptions()
+        );
         this.prevContainer = this.getContainer();
         return;
       }
 
       if (this.isObjectTypePropsChanged(prevProps)) {
-        this.container.setOptions(this.getContainerOptions())
+        this.container.setOptions(this.getContainerOptions());
       }
     }
   }
@@ -106,7 +80,7 @@ class Container extends Component<ContainerProps> {
 
   render() {
     if (this.props.render) {
-			return this.props.render(this.containerRef);
+      return this.props.render(this.containerRef);
     } else {
       return (
         <div style={this.props.style} ref={this.containerRef}>
@@ -114,27 +88,32 @@ class Container extends Component<ContainerProps> {
         </div>
       );
     }
-	}
-	
+  }
+
   getContainer() {
-		return this.containerRef.current;
-	}
+    return this.containerRef.current;
+  }
 
   getContainerOptions(): ContainerOptions {
-    return Object.keys(this.props).reduce((result: ContainerOptions, key: string) => {
-      const optionName = key as keyof ContainerOptions;
-      const prop = this.props[optionName];
+    return Object.keys(this.props).reduce(
+      (result: ContainerOptions, key: string) => {
+        const optionName = key as keyof ContainerOptions;
+        const prop = this.props[optionName];
 
-      if (typeof prop === 'function') {
-        result[optionName] = (...params: any[]) => {
-          return (this.props[optionName] as Function)(...params);
+        if (typeof prop === 'function') {
+          // @ts-ignore
+          result[optionName] = (...params: any[]) => {
+            return (this.props[optionName] as Function)(...params);
+          };
+        } else {
+          // @ts-ignore
+          result[optionName] = prop;
         }
-      } else {
-        result[optionName] = prop;
-      }
 
-      return result;
-    },{}) as ContainerOptions;
+        return result;
+      },
+      {}
+    ) as ContainerOptions;
   }
 }
 
